@@ -22,13 +22,11 @@ namespace EfFirstStep
 
             //GetStudentEmrolmentCourseDepartment();
 
-            //GetCourseOfInstructor();
+            GetCourseOfInstructor();
 
             //CountEnrolmentedCourseOfStudent();
 
-            //CountStudentEachGrade();
-
-            CountInstructorAndCourseOfEachDepartment();
+            //CountStudentEachGrade()
 
             //CountStudentOfEachGrade();
 
@@ -40,8 +38,8 @@ namespace EfFirstStep
         {
             using var db = new DataSubContext();
             var listGradeOfEnrollment = db.Enrollments
-                .GroupBy(x=>x.Grade)
-                .Select(x=>new StudentModel()
+                .GroupBy(x => x.Grade)
+                .Select(x => new StudentModel()
                 {
                     Grade = x.Key,
                     TotalStudent = x.Count(),
@@ -51,23 +49,6 @@ namespace EfFirstStep
             {
                 var sb = string.Format("{0,-6} {1,15}\n",
                 item.Grade, item.TotalStudent);
-                Console.WriteLine(sb);
-            }
-        }
-
-        /// <summary>
-        /// Get all deparment, numm of instructor/course
-        /// </summary>
-        private static void CountInstructorAndCourseOfEachDepartment()
-        {
-            using var db = new DataSubContext();
-            var listInstructorAndCourseOfDepartment = db.Dapartments
-                .Include(x => x.Courses).ToList();
-                 Console.WriteLine("{0,6} {1,15}\n\n", "DapartmentName", "Totalcourse");
-            foreach (var item in listInstructorAndCourseOfDepartment)
-            {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.DepartmentName, item.Courses.Count);
                 Console.WriteLine(sb);
             }
         }
@@ -115,7 +96,7 @@ namespace EfFirstStep
             foreach (var item in listStudentEnrollment)
             {
                 var sb = string.Format("{0,-6} {1,15}\n",
-                item.FirstMidName, item.Enrollments.Count);
+                item.Fullname, item.Enrollments.Count);
                 Console.WriteLine(sb);
             }
         }
@@ -126,13 +107,19 @@ namespace EfFirstStep
         private static void GetCourseOfInstructor()
         {
             using var db = new DataSubContext();
-            var listCourseOfInstructor = db.Instructors.Include(x => x.CourseAssignments).ToList();
-            Console.WriteLine("{0,6} {1,15}\n\n", "InstructorName", "CourseName");
+            var listCourseOfInstructor = db.Instructors.Include(x => x.CourseAssignments).ThenInclude(x=>x.Course).ToList();
+            Console.WriteLine("{0,6}\n\n", "InstructorName");
             foreach (var item in listCourseOfInstructor)
             {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.FirstMidName, item.CourseAssignments);
+                var sb = string.Format("{0,-6}\n",
+                item.Fullname);
                 Console.WriteLine(sb);
+                Console.WriteLine("{0,12} {1,16}\n\n", "CourseID", "CourseTitle");
+                foreach (var ca in item.CourseAssignments)
+                {
+                    var courseAss = string.Format("{0,12} {1,16}\n", ca.CourseID,ca.Course.Title);
+                    Console.WriteLine(courseAss);
+                }
             }
         }
 
@@ -146,11 +133,11 @@ namespace EfFirstStep
                 .ThenInclude(y => y.Course)
                 .ThenInclude(z=>z.Dapartment)
                 .ToList();
-            Console.WriteLine("{0,-6} {1,8}\n\n", "StudentName", "Enrollment");
+            Console.WriteLine("{0,-6}\n\n", "StudentName");
             foreach (var item in listStudentEnrollmentCourse)
             {
-                var sb = string.Format("{0,-6} {1,8}\n",
-                item.FirstMidName, item.LastName);
+                var sb = string.Format("{0,-6}\n",
+                item.Fullname);
                 Console.WriteLine(sb);
                 Console.WriteLine("{0,12} {1,16} {2,19}\n\n", "EnrollmentID", "Course", "DeparmentName");
                 foreach (var e in item.Enrollments)
@@ -172,7 +159,7 @@ namespace EfFirstStep
             foreach (var item in listIntructorWithLocation)
             {
                 var sb = string.Format("{0,-6} {1,15}\n",
-                item.FirstMidName, item?.OfficeAssignment?.LocationIn);
+                item.Fullname, item?.OfficeAssignment?.LocationIn);
                 Console.WriteLine(sb);
             }
         }
@@ -188,7 +175,7 @@ namespace EfFirstStep
             foreach (var item in listDepartmentInstructor)
             {
                 var sb = string.Format("{0,-6} {1,15}\n",
-                item.DepartmentName, item?.Instructor?.LastName + " "+item?.Instructor?.FirstMidName);
+                item.DepartmentName, item.Instructor.Fullname);
                 Console.WriteLine(sb);
             }
         }
@@ -206,7 +193,7 @@ namespace EfFirstStep
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer(
-                @"Server=DINHNHUNG\SQLEXPRESS01;Database=data_sub;Integrated Security=True");
+                @"Server=DINHNHUNG\SQLEXPRESS01;Database=db_trying;Integrated Security=True");
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -216,61 +203,75 @@ namespace EfFirstStep
                 {
                     eb.ToTable("Instructor").HasKey(i => i.InstructorID);
                     eb.HasOne(i => i.OfficeAssignment).WithOne(o => o.Instructor).HasForeignKey<OfficeAssignment>(i => i.InstructorID);
+                    //eb.Property(i =>new { i.InstructorID, i.LastName,i.FirstMidName, i.HireDate})
+                    //.HasColumnName("instructor_id","last_name","first_mid_name","hire_date");
+                    eb.Property(i => i.InstructorID).HasColumnName("instructor_id");
+                    eb.Property(i => i.LastName).HasColumnName("last_name");
+                    eb.Property(i => i.FirstMidName).HasColumnName("first_mid_name");
+                    eb.Property(i => i.HireDate).HasColumnName("hire_date");
                 });
-                
 
-            modelBuilder.Entity<OfficeAssignment>()
-                .ToTable("OfficeAssignment")
-                .HasKey(o=>o.InstructorID);
 
-            modelBuilder.Entity<Dapartment>()
-                .ToTable("Department")
-                .HasKey(d => d.DepartmentID);
-            modelBuilder.Entity<Dapartment>()
-                .HasOne(d => d.Instructor)
-                .WithMany()
-                .HasForeignKey(d => d.InstructorID);
+            modelBuilder.Entity<OfficeAssignment>(
+                eb =>
+                {
+                    eb.ToTable("OfficeAssignment").HasKey(o => o.InstructorID);
+                    eb.Property(o => o.InstructorID).HasColumnName("instructor_id");
+                    eb.Property(o => o.LocationIn).HasColumnName("location");
+                });
 
-            modelBuilder.Entity<Course>()
-                .ToTable("Course")
-                .HasKey(c=>c.CourseID);
-            modelBuilder.Entity<Course>()
-                .HasOne(c => c.Dapartment)
-                .WithMany(d => d.Courses)
-                .HasForeignKey(c => c.DepartmentID)
-                .HasPrincipalKey(d => d.DepartmentID);
+            modelBuilder.Entity<Dapartment>(
+                eb => {
+                    eb.ToTable("Department").HasKey(d => d.DepartmentID);
+                    eb.HasOne(d => d.Instructor).WithMany().HasForeignKey(d => d.InstructorID);
+                    eb.Property(d => d.DepartmentID).HasColumnName("department_id");
+                    eb.Property(d => d.DepartmentName).HasColumnName("department_name");
+                    eb.Property(d => d.Budget).HasColumnName("budget");
+                    eb.Property(d => d.StartDate).HasColumnName("start_date");
+                    eb.Property(d => d.InstructorID).HasColumnName("instructor_id");
+                });
 
-            modelBuilder.Entity<CourseAssignment>()
-                .ToTable("CourseAssignment")
-                .HasKey(ca =>ca.CourseID);
-            modelBuilder.Entity<CourseAssignment>()
-                .HasOne(ca => ca.Instructor)
-                .WithMany(i => i.CourseAssignments)
-                .HasForeignKey(ca => ca.InstructorID)
-                .HasPrincipalKey(i => i.InstructorID);
-            modelBuilder.Entity<CourseAssignment>()
-                .HasOne(ca => ca.Course)
-                .WithMany(c => c.CourseAssignments)
-                .HasForeignKey(ca => ca.CourseID)
-                .HasPrincipalKey(c => c.CourseID);
+            modelBuilder.Entity<Course>(
+                eb =>
+                {
+                    eb.ToTable("Course").HasKey(c => c.CourseID);
+                    eb.HasOne(c => c.Dapartment).WithMany(d => d.Courses).HasForeignKey(c => c.DepartmentID).HasPrincipalKey(d => d.DepartmentID);
+                    eb.Property(c => c.CourseID).HasColumnName("course_id");
+                    eb.Property(c => c.Title).HasColumnName("title");
+                    eb.Property(c => c.Credits).HasColumnName("credits");
+                    eb.Property(c => c.DepartmentID).HasColumnName("department_id");
+                });
 
-            modelBuilder.Entity<Student>()
-                .ToTable("Student")
-                .HasKey(s => s.StudentID);
+            modelBuilder.Entity<CourseAssignment>(
+                eb => {
+                    eb.ToTable("CourseAssignment").HasKey(ca => ca.CourseID);
+                    eb.HasOne(ca => ca.Instructor).WithMany(i => i.CourseAssignments).HasForeignKey(ca => ca.InstructorID).HasPrincipalKey(i => i.InstructorID);
+                    eb.HasOne(ca => ca.Course).WithMany(c => c.CourseAssignments).HasForeignKey(ca => ca.CourseID).HasPrincipalKey(c => c.CourseID);
+                    eb.Property(ca => ca.CourseID).HasColumnName("course_id");
+                    eb.Property(ca => ca.InstructorID).HasColumnName("instructor_id");
+                });
 
-            modelBuilder.Entity<Enrollment>()
-                .ToTable("Enrollment")
-                .HasKey(e => e.EnrollmentID);
-            modelBuilder.Entity<Enrollment>()
-                .HasOne(e => e.Course)
-                .WithMany(c => c.Enrollments)
-                .HasForeignKey(e => e.CourseID)
-                .HasPrincipalKey(c => c.CourseID);
-            modelBuilder.Entity<Enrollment>()
-                .HasOne(e => e.Student)
-                .WithMany(s => s.Enrollments)
-                .HasForeignKey(e => e.StudentID)
-                .HasPrincipalKey(s => s.StudentID);
+            modelBuilder.Entity<Student>(
+                eb =>
+                {
+                    eb.ToTable("Student").HasKey(s => s.StudentID);
+                    eb.Property(s => s.StudentID).HasColumnName("student_id");
+                    eb.Property(s => s.LastName).HasColumnName("last_name");
+                    eb.Property(s => s.FirstMidName).HasColumnName("first_mid_name");
+                    eb.Property(s => s.EnrollmentDate).HasColumnName("enrollment_date");
+                });
+
+            modelBuilder.Entity<Enrollment>(
+                eb =>
+                {
+                    eb.ToTable("Enrollment").HasKey(e => e.EnrollmentID);
+                    eb.HasOne(e => e.Course).WithMany(c => c.Enrollments).HasForeignKey(e => e.CourseID).HasPrincipalKey(c => c.CourseID);
+                    eb.HasOne(e => e.Student).WithMany(s => s.Enrollments).HasForeignKey(e => e.StudentID).HasPrincipalKey(s => s.StudentID);
+                    eb.Property(e => e.EnrollmentID).HasColumnName("enrollment_id");
+                    eb.Property(e => e.CourseID).HasColumnName("course_id");
+                    eb.Property(e => e.StudentID).HasColumnName("student_id");
+                    eb.Property(e => e.Grade).HasColumnName("grade");
+                });
         }
     }
 
@@ -279,10 +280,10 @@ namespace EfFirstStep
         public int InstructorID { get; set; }
         public string LastName { get; set; }
         public string FirstMidName { get; set; }
-        public DateTime HireDate { get; set; }
+        public DateTime? HireDate { get; set; }
         public List<CourseAssignment> CourseAssignments { get; set; }
         public OfficeAssignment OfficeAssignment { get; set; }
-
+        public string Fullname => LastName.Trim() + " " + FirstMidName.Trim();
     }
 
     public class OfficeAssignment
@@ -296,8 +297,8 @@ namespace EfFirstStep
     {
         public int DepartmentID { get; set; }
         public string DepartmentName { get; set; }
-        public int Budget { get; set; }
-        public DateTime StartDate { get; set; }
+        public int? Budget { get; set; }
+        public DateTime? StartDate { get; set; }
         public int? InstructorID { get; set; }
         public Instructor Instructor { get; set; }
         public List<Course> Courses { get; set; }
@@ -307,7 +308,7 @@ namespace EfFirstStep
     {
         public int CourseID { get; set; }
         public string Title { get; set; }
-        public int Credits { get; set; }
+        public int? Credits { get; set; }
         public int DepartmentID { get; set; }
         public Dapartment Dapartment { get; set; }
         public List<CourseAssignment> CourseAssignments { get; set; }
@@ -328,8 +329,9 @@ namespace EfFirstStep
         public int StudentID { get; set; }
         public string LastName { get; set; }
         public string FirstMidName { get; set; }
-        public DateTime EnrollmentDate { get; set; }
+        public DateTime? EnrollmentDate { get; set; }
         public List<Enrollment> Enrollments { get; set; }
+        public string Fullname => LastName.Trim() + " " + FirstMidName.Trim();
     }
 
     public class Enrollment
