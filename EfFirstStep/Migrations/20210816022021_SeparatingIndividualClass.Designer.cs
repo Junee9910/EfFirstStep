@@ -4,14 +4,16 @@ using EfFirstStep.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EfFirstStep.Migrations
 {
     [DbContext(typeof(DataSubContext))]
-    partial class DataSubContextModelSnapshot : ModelSnapshot
+    [Migration("20210816022021_SeparatingIndividualClass")]
+    partial class SeparatingIndividualClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
