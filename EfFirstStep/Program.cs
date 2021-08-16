@@ -26,9 +26,7 @@ namespace EfFirstStep
 
             //CountEnrolmentedCourseOfStudent();
 
-            CountCourseEachDepartment();
-
-            //CountStudentEachGrade();
+            //CountCourseEachDepartment();
 
             //CountStudentOfEachGrade();
 
@@ -46,12 +44,13 @@ namespace EfFirstStep
                     Grade = x.Key,
                     TotalStudent = x.Count(),
                 });
-            Console.WriteLine("{0,6} {1,15}\n\n", "Grade", "TotalStudent");
+            Console.WriteLine("{0,6} {1,15}\n", "Grade", "TotalStudent");
             foreach (var item in listGradeOfEnrollment)
             {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.Grade, item.TotalStudent);
-                Console.WriteLine(sb);
+                //var sb = string.Format("{0,-6} {1,15}\n",
+                //item.Grade, item.TotalStudent);
+                //Console.WriteLine(sb);
+                Console.WriteLine($"{item.Grade,-6} {item.TotalStudent,15}\n");
             }
         }
 
@@ -61,29 +60,16 @@ namespace EfFirstStep
         private static void CountCourseEachDepartment()
         {
             using var db = new DataSubContext();
-            var listCourseOfDepartment = db.Dapartments.Include(x => x.Courses).ToList();
-            Console.WriteLine("{0,6} {1,15}\n\n", "DapartmentName", "Totalcourse");
+            var listCourseOfDepartment = db.Dapartments.Include(x => x.Courses)
+                .Select(x=>new DepartmentModel()
+                {
+                    DepartmentName=x.DepartmentName,
+                    TotalCourse=x.Courses.Count
+            });
+            Console.WriteLine("{0,6} {1,15}\n", "DapartmentName", "Totalcourse");
             foreach (var item in listCourseOfDepartment)
             {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.DepartmentName, item.Courses.Count);
-                Console.WriteLine(sb);
-            }
-        }
-
-        /// <summary>
-        /// Get all student + count enrollment course has grade
-        /// </summary>
-        private static void CountStudentEachGrade()
-        {
-            using var db = new DataSubContext();
-            var ListGradeHasStudent = db.Enrollments.Include(x => x.Student);
-            Console.WriteLine("{0,6} {1,15}\n\n", "Grade", "TotalStudent");
-            foreach (var item in ListGradeHasStudent)
-            {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.Grade, item.Student);
-                Console.WriteLine(sb);
+                Console.WriteLine($"{item.DepartmentName,-6} {item.TotalCourse,15}\n");
             }
         }
 
@@ -93,13 +79,15 @@ namespace EfFirstStep
         private static void CountEnrolmentedCourseOfStudent()
         {
             using var db = new DataSubContext();
-            var listStudentEnrollment = db.Students.Include(x => x.Enrollments).ToList();
-            Console.WriteLine("{0,6} {1,18}\n\n", "InstructorName", "TotalCourse");
+            var listStudentEnrollment = db.Students.Include(x => x.Enrollments)
+                .Select(x => new StudentModel()
+                { 
+                TotalEnrollment=x.Enrollments.Count()
+                });
+            Console.WriteLine("{0,10} {1,20}\n", "InstructorName", "TotalCourse");
             foreach (var item in listStudentEnrollment)
             {
-                var sb = string.Format("{0,-6} {1,18}\n",
-                item.Fullname, item.Enrollments.Count);
-                Console.WriteLine(sb);
+                Console.WriteLine($"{item.Fullname,10} {item.TotalEnrollment,20}\n");
             }
         }
 
@@ -113,14 +101,11 @@ namespace EfFirstStep
             Console.WriteLine("{0,6}\n\n", "InstructorName");
             foreach (var item in listCourseOfInstructor)
             {
-                var sb = string.Format("{0,-6}\n",
-                item.Fullname);
-                Console.WriteLine(sb);
-                Console.WriteLine("{0,12} {1,16}\n\n", "CourseID", "CourseTitle");
+                Console.WriteLine($"{item.Fullname,-6}\n");
+                Console.WriteLine("{0,10} {1,15}\n", "CourseID", "CourseTitle");
                 foreach (var ca in item.CourseAssignments)
                 {
-                    var courseAss = string.Format("{0,12} {1,16}\n", ca.CourseID,ca.Course.Title);
-                    Console.WriteLine(courseAss);
+                    Console.WriteLine($"{ca.CourseID,10} {ca.Course.Title,15}\n\n");
                 }
             }
         }
@@ -135,17 +120,14 @@ namespace EfFirstStep
                 .ThenInclude(y => y.Course)
                 .ThenInclude(z=>z.Dapartment)
                 .ToList();
-            Console.WriteLine("{0,-6}\n\n", "StudentName");
             foreach (var item in listStudentEnrollmentCourse)
             {
-                var sb = string.Format("{0,-6}\n",
-                item.Fullname);
-                Console.WriteLine(sb);
-                Console.WriteLine("{0,12} {1,16} {2,19}\n", "EnrollmentID", "Course", "DeparmentName");
+                Console.WriteLine("{0,-6}\n", "StudentName");
+                Console.WriteLine($"{item.Fullname,-6}\n");
+                Console.WriteLine("{0,10} {1,20} {2,30}\n", "EnrollmentID", "CourseName", "DeparmentName");
                 foreach (var e in item.Enrollments)
                 {
-                    var enroll = string.Format("{0,12} {1,16} {2,19}\n", e.EnrollmentID ,e.Course.Title, e.Course.Dapartment.DepartmentName);
-                    Console.WriteLine(enroll);
+                    Console.WriteLine($"{e.EnrollmentID,10} {e.Course.Title,20} {e.Course.Dapartment.DepartmentName,30}\n\n");
                 }
             }
         }
@@ -157,12 +139,10 @@ namespace EfFirstStep
         {
             using var db = new DataSubContext();
             List<Dapartment> listDepartmentInstructor = db.Dapartments.Include(x => x.Instructor).ToList();
-            Console.WriteLine("{0,6} {1,15}\n\n", "DepartmentName", "InstructorName");
+            Console.WriteLine("{0,6} {1,15}\n", "DepartmentName", "InstructorName");
             foreach (var item in listDepartmentInstructor)
             {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.DepartmentName, item.Instructor.Fullname);
-                Console.WriteLine(sb);
+                Console.WriteLine($"{item.DepartmentName,-6} {item?.Instructor?.Fullname,23}\n");
             }
         }
 
@@ -173,12 +153,10 @@ namespace EfFirstStep
         {
             using var db = new DataSubContext();
             List<Instructor> listIntructorWithLocation = db.Instructors.Include(x => x.OfficeAssignment).ToList();
-            Console.WriteLine("{0,6} {1,15}\n\n", "InstructorName", "Location");
+            Console.WriteLine("{0,20} {1,25}\n", "InstructorName", "Location");
             foreach (var item in listIntructorWithLocation)
             {
-                var sb = string.Format("{0,-6} {1,15}\n",
-                item.Fullname, item?.OfficeAssignment?.LocationIn);
-                Console.WriteLine(sb);
+                Console.WriteLine($"{item.Fullname,20} {item?.OfficeAssignment?.LocationIn,25}\n");
             }
         }
 

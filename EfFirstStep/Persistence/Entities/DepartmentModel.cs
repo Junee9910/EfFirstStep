@@ -3,9 +3,8 @@
 namespace EfFirstStep
 {
     [NotMapped]
-    public class DepartmentModel
+    public class DepartmentModel : Dapartment
     {
-        public string DepartmentName { get; set; }
         public int TotalStudent { get; set; }
         public int TotalCourse { get; set; }
     }
